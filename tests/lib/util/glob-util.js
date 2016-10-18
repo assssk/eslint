@@ -157,7 +157,9 @@ describe("globUtil", function() {
             const file1 = getFixturePath("glob-util", "one-js-file", "baz.js");
 
             assert.isArray(result);
-            assert.deepEqual(result, [{filename: file1, ignored: false}]);
+            assert.deepEqual(result, [
+                {filename: file1, ignored: false, patterns: [patterns[0]]}
+            ]);
         });
 
         it("should return all files matching a glob pattern", function() {
@@ -171,8 +173,8 @@ describe("globUtil", function() {
 
             assert.equal(result.length, 2);
             assert.deepEqual(result, [
-                {filename: file1, ignored: false},
-                {filename: file2, ignored: false}
+                {filename: file1, ignored: false, patterns: [patterns[0]]},
+                {filename: file2, ignored: false, patterns: [patterns[0]]}
             ]);
         });
 
@@ -191,9 +193,9 @@ describe("globUtil", function() {
 
             assert.equal(result.length, 3);
             assert.deepEqual(result, [
-                {filename: file1, ignored: false},
-                {filename: file2, ignored: false},
-                {filename: file3, ignored: false}
+                {filename: file1, ignored: false, patterns: [patterns[0]]},
+                {filename: file2, ignored: false, patterns: [patterns[0]]},
+                {filename: file3, ignored: false, patterns: [patterns[1]]}
             ]);
         });
 
@@ -216,7 +218,7 @@ describe("globUtil", function() {
 
             assert.equal(result.length, 1);
             assert.deepEqual(result, [
-                {filename: file1, ignored: false}
+                {filename: file1, ignored: false, patterns: [patterns[0]]}
             ]);
         });
 
@@ -238,7 +240,7 @@ describe("globUtil", function() {
             });
 
             assert.equal(result.length, 1);
-            assert.deepEqual(result[0], { filename, ignored: true });
+            assert.deepEqual(result[0], { filename, ignored: true, patterns: [patterns[0]] });
         });
 
         it("should silently ignore default ignored files if not passed explicitly even if ignore is false", function() {
@@ -261,7 +263,7 @@ describe("globUtil", function() {
             });
 
             assert.equal(result.length, 1);
-            assert.deepEqual(result[0], { filename, ignored: false });
+            assert.deepEqual(result[0], { filename, ignored: false, patterns: [patterns[0]] });
         });
 
         it("should not return a file which does not exist", function() {
@@ -317,7 +319,7 @@ describe("globUtil", function() {
 
             assert.isArray(result);
             assert.deepEqual(result, [
-                {filename: file1, ignored: false}
+                {filename: file1, ignored: false, patterns: [patterns[0], patterns[1]]}
             ]);
         });
 
@@ -329,7 +331,7 @@ describe("globUtil", function() {
 
             assert.equal(result.length, 1);
             assert.deepEqual(result, [
-                {filename, ignored: true}
+                {filename, ignored: true, patterns: [patterns[0]]}
             ]);
         });
 
@@ -352,7 +354,7 @@ describe("globUtil", function() {
             const result = globUtil.listFilesToProcess(patterns, options);
             const unignoredFilename = getFixturePath("glob-util", "node_modules", "dependency.js");
 
-            assert.includeDeepMembers(result, [{filename: unignoredFilename, ignored: false}]);
+            assert.includeDeepMembers(result, [{filename: unignoredFilename, ignored: false, patterns: [patterns[0]]}]);
         });
     });
 });

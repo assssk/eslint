@@ -314,13 +314,14 @@ describe("cli", function() {
     });
 
     describe("when given a directory with eslint excluded files in the directory", function() {
-        it("should not process any files", function() {
+        it("should not process any files -- throw a notfound error", function() {
             const ignorePath = getFixturePath(".eslintignore");
             const filePath = getFixturePath(".");
             const exit = cli.execute(`--ignore-path ${ignorePath} ${filePath}`);
 
-            assert.isTrue(log.info.notCalled);
-            assert.equal(exit, 0);
+            assert.equal(log.info.callCount, 1);
+            assert.isTrue(log.info.firstCall.args[0].includes("File Not Found"));
+            assert.equal(exit, 1);
         });
     });
 

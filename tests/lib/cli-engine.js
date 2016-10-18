@@ -465,6 +465,14 @@ describe("CLIEngine", function() {
 
         let engine;
 
+        const NOT_FOUND_ERROR = Object.freeze({
+            fatal: true,
+            severity: 2,
+            line: 1,
+            column: 1,
+            message: "File Not Found.",
+        });
+
         it("should use correct parser when custom parser is specified", function() {
 
             engine = new CLIEngine({
@@ -633,7 +641,10 @@ describe("CLIEngine", function() {
 
             const report = engine.executeOnFiles(["node_modules"]);
 
-            assert.equal(report.results.length, 0);
+            assert.equal(report.results.length, 1);
+            assert.equal(report.results[0].filePath, "node_modules");
+            assert.equal(report.results[0].messages.length, 1);
+            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
         });
 
         // https://github.com/eslint/eslint/issues/5547
@@ -646,7 +657,10 @@ describe("CLIEngine", function() {
 
             const report = engine.executeOnFiles(["node_modules"]);
 
-            assert.equal(report.results.length, 0);
+            assert.equal(report.results.length, 1);
+            assert.equal(report.results[0].filePath, "node_modules");
+            assert.equal(report.results[0].messages.length, 1);
+            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
         });
 
         it("should not check .hidden files if they are passed explicitly without --no-ignore flag", function() {
@@ -853,9 +867,13 @@ describe("CLIEngine", function() {
                 ignorePath: getFixturePath(".eslintignore")
             });
 
-            const report = engine.executeOnFiles([getFixturePath("./")]);
+            const pattern = getFixturePath("./");
+            const report = engine.executeOnFiles([pattern]);
 
-            assert.equal(report.results.length, 0);
+            assert.equal(report.results.length, 1);
+            assert.equal(report.results[0].filePath, pattern);
+            assert.equal(report.results[0].messages.length, 1);
+            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
         });
 
         it("should return zero messages when all given files are ignored", function() {
@@ -865,7 +883,10 @@ describe("CLIEngine", function() {
 
             const report = engine.executeOnFiles(["tests/fixtures/"]);
 
-            assert.equal(report.results.length, 0);
+            assert.equal(report.results.length, 1);
+            assert.equal(report.results[0].filePath, "tests/fixtures/");
+            assert.equal(report.results[0].messages.length, 1);
+            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
         });
 
         it("should return zero messages when all given files are ignored event with a `./` prefix", function() {
@@ -875,7 +896,10 @@ describe("CLIEngine", function() {
 
             const report = engine.executeOnFiles(["./tests/fixtures/"]);
 
-            assert.equal(report.results.length, 0);
+            assert.equal(report.results.length, 1);
+            assert.equal(report.results[0].filePath, "./tests/fixtures/");
+            assert.equal(report.results[0].messages.length, 1);
+            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
         });
 
         // https://github.com/eslint/eslint/issues/3788
@@ -908,7 +932,10 @@ describe("CLIEngine", function() {
 
             const report = engine.executeOnFiles(["./tests/fixtures/cli-engine/"]);
 
-            assert.equal(report.results.length, 0);
+            assert.equal(report.results.length, 1);
+            assert.equal(report.results[0].filePath, "./tests/fixtures/cli-engine/");
+            assert.equal(report.results[0].messages.length, 1);
+            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
         });
 
         it("should return zero messages when all given files are ignored via ignore-pattern", function() {
@@ -918,7 +945,10 @@ describe("CLIEngine", function() {
 
             const report = engine.executeOnFiles(["tests/fixtures/*-quoted.js"]);
 
-            assert.equal(report.results.length, 0);
+            assert.equal(report.results.length, 1);
+            assert.equal(report.results[0].filePath, "tests/fixtures/*-quoted.js");
+            assert.equal(report.results[0].messages.length, 1);
+            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
         });
 
         it("should return a warning when an explicitly given file is ignored", function() {
@@ -2305,6 +2335,182 @@ describe("CLIEngine", function() {
 
                 assert.equal(report.results[0].messages[0].message, "'b' is defined but never used.");
                 assert.equal(report.results[0].messages[0].ruleId, "post-processed");
+            });
+        });
+
+        describe("Patterns which match no file should error", () => {
+            beforeEach(() => {
+                engine = new CLIEngine({
+                    cwd: getFixturePath("cli-engine"),
+                    useEslintrc: false,
+                });
+            });
+
+            context("if it specified one file.", function() {
+                let report = null;
+
+                beforeEach(() => {
+                    report = engine.executeOnFiles(["non-exist.js"]);
+                });
+
+                it("should report one result.", () => {
+                    assert.equal(report.results.length, 1);
+                });
+
+                describe("the result", () => {
+                    it("should be the given file's.", () => {
+                        assert.equal(report.results[0].filePath, "non-exist.js");
+                    });
+
+                    it("should have one message.", () => {
+                        assert.equal(report.results[0].messages.length, 1);
+                    });
+
+                    describe("the message", () => {
+                        it("should be 'File Not Found' error.", () => {
+                            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
+                        });
+                    });
+                });
+            });
+
+            context("if it specified one empty directory.", function() {
+                let report = null;
+
+                beforeEach(() => {
+                    report = engine.executeOnFiles(["empty"]);
+                });
+
+                it("should report one result.", () => {
+                    assert.equal(report.results.length, 1);
+                });
+
+                describe("the result", () => {
+                    it("should be the given directory's.", () => {
+                        assert.equal(report.results[0].filePath, "empty");
+                    });
+
+                    it("should have one message.", () => {
+                        assert.equal(report.results[0].messages.length, 1);
+                    });
+
+                    describe("the message", () => {
+                        it("should be 'File Not Found' error.", () => {
+                            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
+                        });
+                    });
+                });
+            });
+
+            context("if it specified one glob pattern.", function() {
+                let report = null;
+
+                beforeEach(() => {
+                    report = engine.executeOnFiles(["non-exist/**/*.js"]);
+                });
+
+                it("should report one result.", () => {
+                    assert.equal(report.results.length, 1);
+                });
+
+                describe("the result", () => {
+                    it("should be the given pattern's.", () => {
+                        assert.equal(report.results[0].filePath, "non-exist/**/*.js");
+                    });
+
+                    it("should have one message.", () => {
+                        assert.equal(report.results[0].messages.length, 1);
+                    });
+
+                    describe("the message", () => {
+                        it("should be 'File Not Found' error.", () => {
+                            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
+                        });
+                    });
+                });
+            });
+
+            context("if it specified two files.", function() {
+                let report = null;
+
+                beforeEach(() => {
+                    report = engine.executeOnFiles(["aaa.js", "bbb.js"]);
+                });
+
+                it("should report two result.", () => {
+                    assert.equal(report.results.length, 2);
+                });
+
+                describe("The 1st result", () => {
+                    it("should be the 1st file's.", () => {
+                        assert.equal(report.results[0].filePath, "aaa.js");
+                    });
+
+                    it("should have one message.", () => {
+                        assert.equal(report.results[0].messages.length, 1);
+                    });
+
+                    describe("the message", () => {
+                        it("should be 'File Not Found' error.", () => {
+                            assert.deepEqual(report.results[0].messages[0], NOT_FOUND_ERROR);
+                        });
+                    });
+                });
+
+                describe("The 2nd result", () => {
+                    it("should be the 2nd file's.", () => {
+                        assert.equal(report.results[1].filePath, "bbb.js");
+                    });
+
+                    it("should have one message.", () => {
+                        assert.equal(report.results[1].messages.length, 1);
+                    });
+
+                    describe("The message", () => {
+                        it("should be 'File Not Found' error.", () => {
+                            assert.deepEqual(report.results[1].messages[0], NOT_FOUND_ERROR);
+                        });
+                    });
+                });
+            });
+
+
+            context("if it specified a mix of an exist file and a non-exist file.", function() {
+                let report = null;
+
+                beforeEach(() => {
+                    report = engine.executeOnFiles(["console.js", "non-exist.js"]);
+                });
+
+                it("should report two result.", () => {
+                    assert.equal(report.results.length, 2);
+                });
+
+                describe("The 1st result", () => {
+                    it("should be the 1st file's.", () => {
+                        assert.equal(report.results[0].filePath, path.resolve(getFixturePath("cli-engine"), "console.js"));
+                    });
+
+                    it("should have no message.", () => {
+                        assert.equal(report.results[0].messages.length, 0);
+                    });
+                });
+
+                describe("The 2nd result", () => {
+                    it("should be the 2nd file's.", () => {
+                        assert.equal(report.results[1].filePath, "non-exist.js");
+                    });
+
+                    it("should have one message.", () => {
+                        assert.equal(report.results[1].messages.length, 1);
+                    });
+
+                    describe("The message", () => {
+                        it("should be 'File Not Found' error.", () => {
+                            assert.deepEqual(report.results[1].messages[0], NOT_FOUND_ERROR);
+                        });
+                    });
+                });
             });
         });
     });
